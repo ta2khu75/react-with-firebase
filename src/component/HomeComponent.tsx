@@ -1,7 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { countCong, countDatLai, countTru } from "../redux/action/countAction";
 import { State } from "../redux/rootReducer";
-import { log } from "console";
 const HomeComponent = () => {
   const dispatch = useDispatch();
   const count = useSelector((state: State) => state.count);
