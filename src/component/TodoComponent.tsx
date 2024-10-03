@@ -4,13 +4,12 @@ import { State } from '../redux/rootReducer'
 import { Level } from '../types/Level'
 import { useDispatch } from 'react-redux'
 import { addTodo, clickTodo, deleteTodoArray, resetTodoInput, setTodoArray, setTodoInput, updateTodoArray } from '../redux/action/todoAction'
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore'
+import { collection, getDocs, query, where } from 'firebase/firestore'
 import { auth, db } from '../config/Firebase'
 import { Todo } from '../types/Todo'
-import { userInfo } from 'os'
 import { signOut } from 'firebase/auth'
 import { useNavigate } from 'react-router-dom'
-import { log } from 'console'
+import BaseService from '../service/BaseService'
 
 const TodoComponent = () => {
     const dispatch = useDispatch()
@@ -33,50 +32,29 @@ const TodoComponent = () => {
 
         }
     }
-    const handleTodoSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleTodoSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        console.log(todoInput);
-
         if (todoInput.id) {
-            try {
-                const todoDoc = doc(todoesCollectionRef, todoInput.id)
-                await updateDoc(todoDoc, { ...todoInput })
+            BaseService.update(todoesCollectionRef, todoInput.id, { ...todoInput }).then(() => {
                 dispatch(updateTodoArray(todoInput))
                 dispatch(resetTodoInput())
-            } catch (error) {
-                console.log(error);
-            }
+            }).catch((error) => console.log(error))
         } else {
-            try {
-                const docRef = await addDoc(todoesCollectionRef, { ...todoInput, userId: auth.currentUser?.uid })
-                const docSnap = await getDoc(doc(todoesCollectionRef, docRef.id))
-                dispatch(addTodo({ ...docSnap.data(), id: docSnap.id, userId: auth.currentUser?.uid ?? "" }))
+            BaseService.create<Todo>(todoesCollectionRef, { ...todoInput, userId: auth.currentUser?.uid }).then((response) => {
+                dispatch(addTodo(response));
                 dispatch(resetTodoInput())
-            } catch (error) {
-                console.log(error);
-            }
+            }).catch((error) => console.log(error))
         }
     }
-    const handleCheckboxChange = async (todo: Todo) => {
+    const handleCheckboxChange = (todo: Todo) => {
         if (todo.id) {
-            try {
-                const todoDoc = doc(todoesCollectionRef, todo.id)
-                await updateDoc(todoDoc, { ...todo, done: !todo.done })
-                dispatch(clickTodo(todo.id))
-            } catch (error) {
-                console.log("error", error);
-            }
+            const id = todo.id;
+            BaseService.update(todoesCollectionRef, id, { ...todo, done: !todo.done }).then(() => dispatch(clickTodo(id))).catch(error => console.log(error))
         }
     }
-    const handleDeleteClick = async (todoId?: string) => {
+    const handleDeleteClick = (todoId?: string) => {
         if (todoId) {
-            const movieDoc = doc(todoesCollectionRef, todoId)
-            try {
-                await deleteDoc(movieDoc);
-                dispatch(deleteTodoArray(todoId))
-            } catch (error) {
-                console.log(error);
-            }
+            BaseService.delete(todoesCollectionRef, todoId).then(() => dispatch(deleteTodoArray(todoId))).catch(error => console.log(error))
         }
     }
     const handleEditClick = async (todo: Todo) => {
@@ -91,7 +69,6 @@ const TodoComponent = () => {
             navigate("/")
         } catch (error) {
             console.log(error);
-
         }
     }
     return (
@@ -155,9 +132,11 @@ const TodoComponent = () => {
                                                     <s>{todo.content}</s>
                                                 </div>
                                                 <div>
-                                                    <span className={`me-5 badge ${bgColor}`}>{todo.level}</span>
-                                                    <button onClick={() => handleDeleteClick(todo.id)} className='btn btn-outline-danger' data-mdb-tooltip-init title="Remove item">
-                                                        x
+
+                                                    <span className={`badge ${bgColor}`}>{todo.level}</span>
+                                                    <button onClick={() => handleEditClick(todo)} className='btn btn-outline-warning mx-5' data-mdb-tooltip-init title="Edit todo" >Edit</button>
+                                                    <button onClick={() => handleDeleteClick(todo.id)} className='btn btn-outline-danger' data-mdb-tooltip-init title="Delete todo">
+                                                        Delete
                                                     </button>
                                                 </div>
                                             </li>
