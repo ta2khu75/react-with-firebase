@@ -17,21 +17,6 @@ const TodoComponent = () => {
     const { todoArray, todoInput } = useSelector((state: State) => state.todo)
     const todoesCollectionRef = collection(db, "todos")
     useEffect(() => { fetchAllTodo() }, [])
-    const fetchAllTodo = async () => {
-        try {
-            // const data = await getDocs(todoesCollectionRef);
-            const userTodosQuery = query(todoesCollectionRef, where("userId", "==", auth.currentUser?.uid));
-            // Fetch the todos that belong to the authenticated user
-            const querySnapshot = await getDocs(userTodosQuery);
-            // Map the retrieved documents into an array
-            const todoArray = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-            // const todoArray = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-            dispatch(setTodoArray(todoArray))
-        } catch (error) {
-            console.log(error);
-
-        }
-    }
     const handleTodoSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (todoInput.id) {
@@ -59,7 +44,21 @@ const TodoComponent = () => {
     }
     const handleEditClick = async (todo: Todo) => {
         dispatch(setTodoInput({ ...todo }))
+    }
+    const fetchAllTodo = async () => {
+        try {
+            // const data = await getDocs(todoesCollectionRef);
+            const userTodosQuery = query(todoesCollectionRef, where("userId", "==", auth.currentUser?.uid));
+            // Fetch the todos that belong to the authenticated user
+            const querySnapshot = await getDocs(userTodosQuery);
+            // Map the retrieved documents into an array
+            const todoArray = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+            // const todoArray = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+            dispatch(setTodoArray(todoArray))
+        } catch (error) {
+            console.log(error);
 
+        }
     }
     const handleLogoutClick = async () => {
         try {
