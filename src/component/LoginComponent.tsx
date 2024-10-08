@@ -1,33 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { auth, googleProvider } from '../config/Firebase';
-import { signInWithEmailAndPassword, signInWithPopup} from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../redux/store';
+import { fetchLoginEmail, fetchLoginGoogle } from '../redux/action/authAction';
+import { useSelector } from 'react-redux';
+import { State } from '../redux/rootReducer';
 
 function LoginComponent() {
     const [user, setUser] = useState<User>();
+    const dispatch = useDispatch<AppDispatch>()
+    const { login } = useSelector((state: State) => state.auth)
     const navigate = useNavigate()
+    useEffect(() => {
+        if (login) navigate("/todo")
+    }, [login])
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (user?.email && user?.password) {
-            try {
-                await signInWithEmailAndPassword(auth, user.email, user.password);
-                navigate("/todo")
-            } catch (error: any) {
-                console.error("Error logging in:", error);
-                alert(error?.message);
-            }
+            dispatch(fetchLoginEmail({ email: user.email, password: user.password }))
+            // try {
+            //     await signInWithEmailAndPassword(auth, user.email, user.password);
+            //     console.log(auth.currentUser);
+            // } catch (error: any) {
+            //     console.error("Error logging in:", error);
+            //     alert(error?.message);
+            // }
         }
     };
     const handleUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setUser({ ...user, [e.target.name]: e.target.value });
     }
     const handleLoginGoogle = async () => {
-        try {
-            await signInWithPopup(auth, googleProvider)
-            navigate("/todo")
-        } catch (error) {
-            console.log(error);
-        }
+        dispatch(fetchLoginGoogle())
     }
     return (
         <section className="vh-100" style={{ backgroundColor: '#508bfc' }}>

@@ -2,7 +2,6 @@ import { Link, NavLink } from "react-router-dom"
 import { auth } from "../config/Firebase"
 
 const AppComponent = () => {
-
     return (
         <>
             <nav className="navbar navbar-expand-lg bg-body-tertiary">

@@ -3,71 +3,46 @@ import { useSelector } from 'react-redux'
 import { State } from '../redux/rootReducer'
 import { Level } from '../types/Level'
 import { useDispatch } from 'react-redux'
-import { addTodo, clickTodo, deleteTodoArray, resetTodoInput, setTodoArray, setTodoInput, updateTodoArray } from '../redux/action/todoAction'
-import { collection, getDocs, query, where } from 'firebase/firestore'
-import { auth, db } from '../config/Firebase'
+import { fetchAddTodo, fetchClickTodo, fetchDeleteTodo, fetchTodoList, fetchUpdateTodo, resetTodoInput, setTodoArray, setTodoInput } from '../redux/action/todoAction'
+import { auth } from '../config/Firebase'
 import { Todo } from '../types/Todo'
 import { signOut } from 'firebase/auth'
 import { useNavigate } from 'react-router-dom'
-import BaseService from '../service/BaseService'
+import { AppDispatch } from '../redux/store'
+import { logout } from '../redux/action/authAction'
 
 const TodoComponent = () => {
-    const dispatch = useDispatch()
+    const dispatch = useDispatch<AppDispatch>()
     const navigate = useNavigate()
+    const { login } = useSelector((state: State) => state.auth)
     const { todoArray, todoInput } = useSelector((state: State) => state.todo)
-    const todoesCollectionRef = collection(db, "todos")
     useEffect(() => { fetchAllTodo() }, [])
     const handleTodoSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (todoInput.id) {
-            BaseService.update(todoesCollectionRef, todoInput.id, { ...todoInput }).then(() => {
-                dispatch(updateTodoArray(todoInput))
-                dispatch(resetTodoInput())
-            }).catch((error) => console.log(error))
+            dispatch(fetchUpdateTodo(todoInput))
         } else {
-            BaseService.create<Todo>(todoesCollectionRef, { ...todoInput, userId: auth.currentUser?.uid }).then((response) => {
-                dispatch(addTodo(response));
-                dispatch(resetTodoInput())
-            }).catch((error) => console.log(error))
+            dispatch(fetchAddTodo({ ...todoInput, userId: auth.currentUser?.uid }))
         }
     }
     const handleCheckboxChange = (todo: Todo) => {
-        if (todo.id) {
-            const id = todo.id;
-            BaseService.update(todoesCollectionRef, id, { ...todo, done: !todo.done }).then(() => dispatch(clickTodo(id))).catch(error => console.log(error))
-        }
+        dispatch(fetchClickTodo(todo))
     }
     const handleDeleteClick = (todoId?: string) => {
         if (todoId) {
-            BaseService.delete(todoesCollectionRef, todoId).then(() => dispatch(deleteTodoArray(todoId))).catch(error => console.log(error))
+            dispatch(fetchDeleteTodo(todoId))
         }
     }
     const handleEditClick = async (todo: Todo) => {
         dispatch(setTodoInput({ ...todo }))
     }
-    const fetchAllTodo = async () => {
-        try {
-            // const data = await getDocs(todoesCollectionRef);
-            const userTodosQuery = query(todoesCollectionRef, where("userId", "==", auth.currentUser?.uid));
-            // Fetch the todos that belong to the authenticated user
-            const querySnapshot = await getDocs(userTodosQuery);
-            // Map the retrieved documents into an array
-            const todoArray = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-            // const todoArray = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
-            dispatch(setTodoArray(todoArray))
-        } catch (error) {
-            console.log(error);
-
-        }
+    const fetchAllTodo = () => {
+        dispatch(fetchTodoList())
     }
     const handleLogoutClick = async () => {
-        try {
-            await signOut(auth)
-            dispatch(setTodoArray([]))
-            dispatch(resetTodoInput());
+        dispatch(logout())
+        if (!login) {
             navigate("/")
-        } catch (error) {
-            console.log(error);
         }
     }
     return (
@@ -98,7 +73,7 @@ const TodoComponent = () => {
                                     <button type="submit" data-mdb-button-init data-mdb-ripple-init className="btn btn-primary btn-lg ms-2">{todoInput?.id ? "Update" : "Add"}</button>
                                 </form>
                                 <ul className="list-group mb-0">
-                                    {todoArray.map((todo: Todo) => {
+                                    {todoArray?.map((todo: Todo) => {
                                         let bgColor = ""
                                         if (todo.level) {
                                             switch (todo.level) {

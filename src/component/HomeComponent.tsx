@@ -8,7 +8,6 @@ const HomeComponent = () => {
 
   return (
     <div>
-      <div>{process.env.REACT_APP_API_KEY_FIREBASE}</div>
       <h1>{count}</h1>
       <button onClick={() => dispatch(countCong(500))}>cong</button>
       <button onClick={() => dispatch(countTru(1000))}>tru</button>
